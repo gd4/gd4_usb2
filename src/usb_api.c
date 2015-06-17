@@ -1,18 +1,5 @@
-#include <libusb-1.0/libusb.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h> 
-#include <sys/time.h> 
-  
-#define VID  0X04b4
-#define PID  0x1004  
-#define OUTEP 0X02
-#define INEP  0X86
+#include "usb_api.h"
+
 int tim_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
 unsigned char buf1[512];
 unsigned char buf[512];
@@ -41,14 +28,12 @@ int tim_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
         return 0;
 }  
 
-export libusb_device        **gd4_devs; 
-export libusb_device_handle *gd4_hev_handle; 
-export libusb_context       *gd4_ctx; 
+libusb_device        **gd4_devs; 
+libusb_device_handle *gd4_dev_handle; 
+libusb_context       *gd4_ctx = NULL; 
 
 int gd4_usb_init() {  
     int r;
-    int count=5000;
-    int length[512];
     ssize_t cnt; 
     r = libusb_init(&gd4_ctx); 
     if(r < 0) {  
@@ -64,27 +49,26 @@ int gd4_usb_init() {
     }  
     printf("%d Devices in list.\n", cnt);  
   
-    gd4_hev_handle = libusb_open_device_with_vid_pid(gd4_ctx, VID, PID); 
-    if(gd4_hev_handle == NULL)  
+    gd4_dev_handle = libusb_open_device_with_vid_pid(gd4_ctx, VID, PID); 
+    if(gd4_dev_handle == NULL)  
         perror("Cannot open device\n");  
     else { 
         printf("Device Opened\n");  
         libusb_free_device_list(gd4_devs, 1);  
 	}
   
-    if(libusb_kernel_driver_active(gd4_hev_handle, 0) == 1) { //find out if kernel driver is attached  
+    if(libusb_kernel_driver_active(gd4_dev_handle, 0) == 1) { //find out if kernel driver is attached  
         printf("Kernel Driver Active\n");  
-        if(libusb_detach_kernel_driver(gd4_hev_handle, 0) == 0) //detach it  
+        if(libusb_detach_kernel_driver(gd4_dev_handle, 0) == 0) //detach it  
             printf("Kernel Driver Detached!\n");  
     }  
-    r = libusb_claim_interface(gd4_hev_handle, 0);  
+    r = libusb_claim_interface(gd4_dev_handle, 0);  
     if(r < 0) {  
         perror("Cannot Claim Interface\n");  
         return 1;  
     }  
     printf("Claimed Interface\n");  
 	printf("gd4 initial finish.\n");
-
 	return 0;
 }
 
@@ -92,31 +76,34 @@ int usb_speed_test() {
 	//start setup command
 	//gd4_help();
     struct timeval start,stop,diff;
+    int count=5;
+    int length[512];
+    int r;
     memset(buf,0x36,512);
     gettimeofday(&start,0);
     while(count--)
     {
-        r= libusb_bulk_transfer(gd4_hev_handle,OUTEP, buf, 512,length, 200);
+        r= libusb_bulk_transfer(gd4_dev_handle,OUTEP, buf, 512,length, 200);
         if(r<0){
             perror("error\n");
         }
         else{
-           // printf("bulk write success\n");
+            printf("bulk write success\n");
         }
-        r= libusb_bulk_transfer(gd4_hev_handle, INEP, buf1, 512,length, 200);
+        r= libusb_bulk_transfer(gd4_dev_handle, INEP, buf1, 512,length, 200);
         if(r<0){
             perror("error\n");
         }
         else{
-           // printf("bulk read success  %s\n",buf1);
+            printf("bulk read success  %s\n",buf1);
         }
             
     }
     gettimeofday(&stop,0);
     tim_subtract(&diff,&start,&stop);
     printf("offtime:: %d /n",diff.tv_usec+diff.tv_sec*1000000);
-    device_satus(gd4_hev_handle);
-    libusb_close(gd4_hev_handle); //close the device we opened  
+    device_satus(gd4_dev_handle);
+    libusb_close(gd4_dev_handle); //close the device we opened  
     libusb_exit(gd4_ctx); //needs to be called to end the  
     return 0;  
 } 

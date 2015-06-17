@@ -1,0 +1,2 @@
+usb_api.o: usb_api.c usb_api.h
+main.o: main.c usb_api.h
