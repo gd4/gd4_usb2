@@ -19,5 +19,7 @@
 
 int gd4_usb_init();
 int usb_speed_test();
+int usb_da_op(unsigned long channel,unsigned long value);
+int usb_ad_op(unsigned long channel);
 
 #endif
