@@ -1,6 +1,6 @@
-myapp=gd4
+myapp=zilar
 
-ARCH=arm
+ARCH=x86
 ifeq (arm,$(ARCH))
     GCC=arm-bcm2708hardfp-linux-gnueabi-gcc
     GXX=arm-bcm2708hardfp-linux-gnueabi-g++
