@@ -36,12 +36,14 @@ void * ad_continue_samp_thread(void * arg) {
     struct ThreadMode *samp_flags = arg; 
 	char content[10240]; 
 	usb_ad_mode(samp_flags->mode,samp_flags->channel);
+    printf("start continue samp.\n\r>");
     while(1) {
 	    if(samp_flags->mode == 1) {
             usb_ad_read(samp_flags->channel,samp_flags->fd); 
 		}else {
 	        usb_ad_mode(samp_flags->mode,samp_flags->channel);
 			usb_clr();
+			printf("samp thread exit.\n");
             pthread_exit(samp_flags);
 		}
 	}
@@ -113,6 +115,7 @@ int main() {
 	        gd4_cmd_help();
 	        break;
 		case 'e':
+			clr_ThreadMode(tmode);
 	        goto error;
 	        break;
 	    }
