@@ -1,8 +1,13 @@
 #include "usb_api.h"
 
-int tim_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
+libusb_device        **gd4_devs; 
+libusb_device_handle *gd4_dev_handle; 
+libusb_context       *gd4_ctx = NULL; 
+
 unsigned char buf1[512];
 unsigned char buf[512];
+
+int tim_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
 static int device_satus(libusb_device_handle *hd)  
 {  
   
@@ -29,9 +34,6 @@ int tim_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
     return 0;
 }  
 
-libusb_device        **gd4_devs; 
-libusb_device_handle *gd4_dev_handle; 
-libusb_context       *gd4_ctx = NULL; 
 
 int gd4_usb_init() {  
     int r;
@@ -106,7 +108,7 @@ int usb_speed_test() {
     printf("offtime:: %ld /n",diff.tv_usec+diff.tv_sec*1000000);
     device_satus(gd4_dev_handle);
     libusb_close(gd4_dev_handle); //close the device we opened  
-    libusb_exit(gd4_ctx); //needs to be called to end the  
+    libusb_exit(gd4_ctx); //needs to be called to end the device  
     return 0;  
 } 
 
@@ -204,3 +206,102 @@ int usb_ad_op(unsigned long channel) {
 	return 0;
 }
 
+int usb_ad_mode(unsigned long mode,unsigned long channel) {
+    unsigned char buffer[512];
+	memset(buffer,0x0,512);
+	int length[512];
+	int r;
+	unsigned long pkthead = 0;
+	unsigned long id = 0;
+	if(mode == 1) {
+	    pkthead = 0x7A7A7A7A;
+	    id = 0x7A7A7A7A;
+    }
+	if(mode == 0) {
+	    pkthead = 0x7B7B7B7B;
+	    id = 0x7B7B7B7B;
+    }
+	    
+	memcpy(buffer,   &pkthead,4);
+	memcpy(buffer+4, &id,4);
+	memcpy(buffer+8, &channel,4);
+
+	if(gd4_dev_handle != NULL) {
+	    r = libusb_bulk_transfer(gd4_dev_handle, OUTEP, buffer, 512, length, 2000);
+        if(r<0){
+            perror("usb trans error!\n");
+			return 1;
+        } else {
+            printf("AD mode:%ld set success.\n",mode);
+			return 0;
+        }
+    } else {
+		printf("Please Initial GD4.\n");
+	    return 1;
+	}
+}
+
+void usb_ad_read(unsigned long channel,int fd) {
+	unsigned char s[80];
+	memset(buf1,0x0,512);
+	int length[512];
+	int r,i;
+	unsigned long pkthead = 0;
+	unsigned long id = 0;
+    unsigned long USB_Data;
+	if (gd4_dev_handle != NULL)
+	{
+	    r = libusb_bulk_transfer(gd4_dev_handle, INEP, buf1, 512, length, 1000);
+        if(r<0){
+            perror("usb trans error!\n");
+			return;
+        } else {
+            //printf("AD read num %d.\n",length[0]);
+	        if (write(fd, buf1, length[0]) != length[0])
+   	            printf("content write error\n");
+        }
+	}
+	//sprintf(content,"----------------------------------------\n");
+	//for(i=0;i<length[0];i= i+4) {
+	//    memcpy(&USB_Data,buf1+i,4);
+	//	//USB_Data = ((USB_Data & 0x0FFF)*5000)>>12;
+	//    //Value = (float)USB_Data*0.02;
+	//    //m_PlotShow.SetData(Value);
+	//	//sprintf(s,"0x%lx ",USB_Data);
+	//    if (write(fd, USB_Data, 4) != 4)
+   	//        printf("content write error\n");
+	//	//printf("%s\n",s);
+    //    //strcat(content,s);
+	//	if(i > length[0]) {
+	//	    printf("%s\n",s);
+	//	    break;
+	//    }
+	//}
+	//printf("file fd is: %d",fd);
+
+	return;
+}
+
+int usb_clr() {
+    unsigned char buffer[512];
+	unsigned char s[80];
+	char content[10240]; 
+	memset(buffer,0x0,512);
+	int length[512];
+	int r;
+	unsigned long pkthead = 0;
+	unsigned long id = 0;
+    unsigned long USB_Data;
+	float Value;
+	if (gd4_dev_handle != NULL)
+	{
+		while(1) {
+	        r = libusb_bulk_transfer(gd4_dev_handle, INEP, buffer, 512, length, 2000);
+            if(r<0){
+			    break;
+			}
+	    }
+	}
+	//sprintf(content,"----------------------------------------\n");
+    return 1;
+}

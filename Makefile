@@ -18,14 +18,16 @@ LIB=-lusb-1.0
 VPATH=$(SRCPATH)
 
 CCFLAGS= -g
-OBJ= main.o usb_api.o
+OBJ= main.o usb_api.o thread_mode.o
 default:$(OBJ)
 	@echo ARCH=$(ARCH)
 	$(GCC) $(INCPATH) $(LIBPATH) $(LIB) -lpthread $(CCFLAGS) -o $(myapp) $(OBJ)
-main.o: $(SRCPATH)/main.c $(SRCPATH)/usb_api.h
+main.o: $(SRCPATH)/main.c $(SRCPATH)/gd4.h $(SRCPATH)/usb_api.h $(SRCPATH)/thread_mode.h
 	$(GCC) $(INCPATH)  $(CCFLAGS) -c $(SRCPATH)/main.c
 usb_api.o: $(SRCPATH)/usb_api.c $(SRCPATH)/usb_api.h
 	$(GCC) $(INCPATH)  $(CCFLAGS) -c $(SRCPATH)/usb_api.c
+thread_mode.o: $(SRCPATH)/thread_mode.c $(SRCPATH)/thread_mode.h
+	$(GCC) $(INCPATH)  $(CCFLAGS) -c $(SRCPATH)/thread_mode.c
 clean:
 	@rm -rf *.o $(myapp)
 install:
